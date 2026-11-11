@@ -82,3 +82,30 @@ def test_cancel_booking_permission_error(
     with pytest.raises(PermissionError) as e:
         booking_system.cancel_booking(1, second_user)
     assert str(e.value) == "У вас недостаточно прав для отмены бронирования"
+
+def test_student_cannot_cancel_revoked_booking(bs, curator, test_user):
+    bs.cancel_booking(1, curator)
+    assert bs.bookings[1].status == "revoked"
+    with pytest.raises(ValueError) as e:
+        bs.cancel_booking(1, test_user)
+    assert str(e.value) == "Можно отменить только активное бронирование"
+    assert bs.bookings[1].status == "revoked"
+
+def test_curator_cannot_revoke_cancelled_booking(bs, curator, test_user):
+    bs.cancel_booking(1, test_user)
+    assert bs.bookings[1].status == "cancelled"
+    with pytest.raises(ValueError) as e:
+        bs.cancel_booking(1, curator)
+    assert str(e.value) == "Можно отменить только активное бронирование"
+    assert bs.bookings[1].status == "cancelled"
+@pytest.mark.parametrize(
+    "status, role", [("cancelled", "student"), ("revoked", "curator")]
+)
+def test_cancelled_or_revoked_booking_releases_room(calibri, bs,status, role, curator, test_user, start_time, end_time):
+    if role == "curator":
+        user = curator
+    elif role == "student":
+        user = test_user
+    bs.cancel_booking(1, user)
+    assert bs.bookings[1].status == status
+    assert bs.is_available(calibri, start_time, end_time)
