@@ -1,13 +1,23 @@
-import pytest
+from datetime import datetime
 
+import pytest
+def to_dt(time:str):
+    return datetime.strptime(time, "%H:%M")
 
 def test_booking_system(booking_system):
     assert booking_system.bookings == {}
     assert booking_system._bookings_amount == 0
 
-
-def test_is_available(booking_system, calibri, start_time, end_time):
-    assert booking_system.is_available(calibri, start_time, end_time) == True
+@pytest.mark.parametrize("start_timing, end_timing, expected_available", [(to_dt("12:30"), to_dt("13:30"), False),
+                                                                   (to_dt("13:30"), to_dt("14:30"), True),
+                                                                   (to_dt("12:00"), to_dt("13:00"), False),
+                                                                   (to_dt("12:29"), to_dt("12:31"), False),
+                                                                   (to_dt("13:00"), to_dt("14:00"), False),
+                                                                   (to_dt("11:00"), to_dt("14:00"), False),
+                                                                   (to_dt("12:40"), to_dt("13:20"), False),
+                                                                       (to_dt("11:30"), to_dt("12:30"), True)])
+def test_is_available(start_timing, end_timing, expected_available ,bs, test_user, calibri):
+    assert bs.is_available(calibri, start_timing, end_timing) == expected_available
 
 
 def test_is_available_with_error(

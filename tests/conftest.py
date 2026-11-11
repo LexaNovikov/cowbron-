@@ -48,6 +48,7 @@ def booking_system():
     return BookingSystem()
 
 
+
 @pytest.fixture
 def start_time():
     return datetime.datetime.strptime("12:30", "%H:%M")
@@ -61,3 +62,10 @@ def end_time():
 @pytest.fixture
 def curator():
     return User("Polina", "polina@gmail.com", "curator")
+
+
+@pytest.fixture
+def bs(calibri, test_user, start_time, end_time):
+    bs = BookingSystem()
+    bs.create_booking(calibri, test_user, start_time, end_time)
+    return bs
