@@ -1,12 +1,15 @@
 from .connection import db_connect
 import datetime
+def to_datetime(date, time):
+    return datetime.datetime.strptime(f"{date} {time}", '%Y-%m-%d %H:%M')
+
 def create_booking(room_id, user_id, date, start, end) -> int:
+    start_time = to_datetime(date, start)
+    end_time = to_datetime(date, end)
+    if end_time <= start_time:
+        raise ValueError("400 Bad Request: Конец бронирования должен быть позже начала")
     with db_connect() as conn:
         with conn.cursor() as cur:
-            start_time = datetime.datetime.strptime(f"{date} {start}", '%Y-%m-%d %H:%M')
-            end_time = datetime.datetime.strptime(f"{date} {end}", '%Y-%m-%d %H:%M')
-            if end_time <= start_time:
-                raise ValueError("400 Bad Request: Конец бронирования должен быть позже начала")
             cur.execute(
                 """
                 SELECT id 
@@ -19,6 +22,17 @@ def create_booking(room_id, user_id, date, start, end) -> int:
             room = cur.fetchone()
             if room is None:
                 raise ValueError("404 Not Found: Выбранной комнаты не существует")
+            cur.execute(
+                """
+                SELECT id
+                FROM users
+                WHERE id = %s
+                """,
+                (user_id,)
+            )
+            user = cur.fetchone()
+            if user is None:
+                raise ValueError("404 Not Found: Пользователя не существует")
             cur.execute(
                 """
                 SELECT bookings.status, bookings.room_id, bookings.start_time, bookings.end_time
